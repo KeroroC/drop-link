@@ -5,3 +5,15 @@ target/
 *.ear
 *.log
 .DS_Store
+
+# Runtime data
+data/
+uploads/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
