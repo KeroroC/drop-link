@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: '/api/files',
-  timeout: 30000
+  timeout: 300000  // 5 minutes, sufficient for large file uploads
 })
 
 export function fetchFileList() {

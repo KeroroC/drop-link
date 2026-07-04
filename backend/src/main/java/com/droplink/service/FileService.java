@@ -14,10 +14,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class FileService {
+
+    private static final Set<String> BLOCKED_EXTENSIONS = Set.of(
+            ".exe", ".bat", ".cmd", ".sh", ".ps1", ".vbs", ".js", ".msi", ".com", ".scr", ".pif"
+    );
 
     private final FileRepository fileRepository;
     private final Path uploadDir;
@@ -39,10 +44,19 @@ public class FileService {
         if (originalName == null || originalName.isBlank()) {
             originalName = "unnamed";
         }
-        String storedName = fileId + getFileExtension(originalName);
+
+        String ext = getFileExtension(originalName).toLowerCase();
+        if (BLOCKED_EXTENSIONS.contains(ext)) {
+            throw new IllegalArgumentException("不允许上传此类文件: " + ext);
+        }
+
+        String storedName = fileId + ext;
         Long fileSize = file.getSize();
 
-        Path targetPath = uploadDir.resolve(storedName);
+        Path targetPath = uploadDir.resolve(storedName).normalize();
+        if (!targetPath.startsWith(uploadDir)) {
+            throw new SecurityException("非法文件路径");
+        }
         file.transferTo(targetPath.toFile());
 
         FileRecord record = new FileRecord(fileId, originalName, storedName, fileSize, LocalDateTime.now());
@@ -60,7 +74,10 @@ public class FileService {
 
     public Path getStoredFile(String fileId) {
         FileRecord record = getFileInfo(fileId);
-        Path filePath = uploadDir.resolve(record.getStoredName());
+        Path filePath = uploadDir.resolve(record.getStoredName()).normalize();
+        if (!filePath.startsWith(uploadDir)) {
+            throw new SecurityException("非法文件路径");
+        }
         if (!Files.exists(filePath)) {
             throw new FileNotFoundException("物理文件不存在: " + fileId);
         }
