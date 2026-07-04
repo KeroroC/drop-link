@@ -41,6 +41,12 @@ public class FileController {
         return ApiResponse.success(record);
     }
 
+    @DeleteMapping("/{fileId}")
+    public ApiResponse<Void> deleteFile(@PathVariable String fileId) {
+        fileService.deleteFile(fileId);
+        return ApiResponse.success("删除成功");
+    }
+
     @GetMapping("/{fileId}/download")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileId) {
         FileRecord record = fileService.getFileInfo(fileId);

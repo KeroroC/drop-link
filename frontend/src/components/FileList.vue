@@ -12,10 +12,13 @@
           {{ formatTime(row.uploadTime) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="100" align="center">
+      <el-table-column label="操作" width="160" align="center">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleDownload(row.fileId)">
             下载
+          </el-button>
+          <el-button type="danger" link @click="handleDelete(row)">
+            删除
           </el-button>
         </template>
       </el-table-column>
@@ -28,7 +31,10 @@
 </template>
 
 <script setup>
-import { downloadFile } from '../api/fileApi'
+import { downloadFile, deleteFile } from '../api/fileApi'
+import { ElMessage, ElMessageBox } from 'element-plus'
+
+const emit = defineEmits(['delete-success'])
 
 defineProps({
   files: {
@@ -59,6 +65,23 @@ function formatTime(timeStr) {
 
 function handleDownload(fileId) {
   downloadFile(fileId)
+}
+
+async function handleDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除文件 "${row.originalName}" 吗？`,
+      '确认删除',
+      { type: 'warning' }
+    )
+    await deleteFile(row.fileId)
+    ElMessage.success('删除成功')
+    emit('delete-success')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败')
+    }
+  }
 }
 </script>
 

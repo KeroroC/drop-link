@@ -67,6 +67,19 @@ public class FileService {
         return fileRepository.save(record);
     }
 
+    public void deleteFile(String fileId) {
+        FileRecord record = getFileInfo(fileId);
+        Path filePath = uploadDir.resolve(record.getStoredName()).normalize();
+        if (filePath.startsWith(uploadDir) && Files.exists(filePath)) {
+            try {
+                Files.delete(filePath);
+            } catch (IOException e) {
+                throw new RuntimeException("删除文件失败", e);
+            }
+        }
+        fileRepository.delete(record);
+    }
+
     public void cleanExpiredFiles() {
         List<FileRecord> expiredFiles = fileRepository.findByExpireTimeBeforeAndExpireTimeIsNotNull(LocalDateTime.now());
         for (FileRecord record : expiredFiles) {

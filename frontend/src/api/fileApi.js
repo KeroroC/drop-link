@@ -27,3 +27,7 @@ export function uploadFile(file, expireHours, onProgress) {
 export function downloadFile(fileId) {
   window.open(`/api/files/${fileId}/download`, '_blank')
 }
+
+export function deleteFile(fileId) {
+  return api.delete(`/${fileId}`)
+}

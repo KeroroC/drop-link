@@ -9,7 +9,7 @@
       </template>
 
       <FileUploader @upload-success="loadFiles" />
-      <FileList :files="files" />
+      <FileList :files="files" @delete-success="loadFiles" />
     </el-card>
   </div>
 </template>
