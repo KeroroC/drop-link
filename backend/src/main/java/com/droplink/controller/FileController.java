@@ -27,7 +27,7 @@ public class FileController {
         this.fileService = fileService;
     }
 
-    @GetMapping
+    @GetMapping({"", "/"})
     public ApiResponse<List<FileRecord>> listFiles() {
         List<FileRecord> files = fileService.listAll();
         return ApiResponse.success(files);
