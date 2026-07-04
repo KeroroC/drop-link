@@ -3,8 +3,9 @@ uploads/
 data/
 *.db
 
-# Build output
-backend/src/main/resources/static/
+# Build output (only generated files)
+backend/src/main/resources/static/assets/
+backend/src/main/resources/static/index.html
 
 # IDE
 .idea/
