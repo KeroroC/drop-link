@@ -4,6 +4,7 @@ import com.droplink.entity.FileRecord;
 import com.droplink.exception.FileNotFoundException;
 import com.droplink.repository.FileRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,9 +13,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -29,11 +27,14 @@ public class FileService {
 
     private final FileRepository fileRepository;
     private final Path uploadDir;
+    private final PasswordEncoder passwordEncoder;
 
     public FileService(FileRepository fileRepository,
-                       @Value("${app.upload.dir:./uploads}") String uploadDir) {
+                       @Value("${app.upload.dir:./uploads}") String uploadDir,
+                       PasswordEncoder passwordEncoder) {
         this.fileRepository = fileRepository;
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+        this.passwordEncoder = passwordEncoder;
     }
 
     @PostConstruct
@@ -68,7 +69,7 @@ public class FileService {
 
         FileRecord record = new FileRecord(fileId, originalName, storedName, fileSize, now, expireTime);
         if (password != null && !password.isBlank()) {
-            record.setPasswordHash(hashPassword(password));
+            record.setPasswordHash(passwordEncoder.encode(password));
         }
         return fileRepository.save(record);
     }
@@ -81,23 +82,12 @@ public class FileService {
         if (password == null || password.isBlank()) {
             return false;
         }
-        return record.getPasswordHash().equals(hashPassword(password));
+        return passwordEncoder.matches(password, record.getPasswordHash());
     }
 
-    private String hashPassword(String password) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256不可用", e);
-        }
+    public boolean isPasswordRequired(String fileId) {
+        FileRecord record = getFileInfo(fileId);
+        return record.getPasswordHash() != null;
     }
 
     public void deleteFile(String fileId) {
@@ -146,8 +136,8 @@ public class FileService {
         if (!Files.exists(filePath)) {
             throw new FileNotFoundException("物理文件不存在: " + fileId);
         }
-        record.incrementDownloadCount();
-        fileRepository.save(record);
+        // Atomic update to avoid race condition
+        fileRepository.incrementDownloadCount(fileId);
         return filePath;
     }
 

@@ -88,17 +88,24 @@ async function handleDownload(row) {
           cancelButtonText: '取消'
         }
       )
-      const { data } = await verifyPassword(row.fileId, password)
-      if (data.code === 200) {
-        downloadFile(row.fileId, password)
-      } else {
-        ElMessage.error('密码错误')
+      await downloadFile(row.fileId, password)
+      ElMessage.success('下载成功')
+    } catch (error) {
+      if (error !== 'cancel' && error?.message !== 'cancel') {
+        if (error.response?.status === 403) {
+          ElMessage.error('密码错误')
+        } else {
+          ElMessage.error('下载失败')
+        }
       }
-    } catch {
-      // User cancelled
     }
   } else {
-    downloadFile(row.fileId)
+    try {
+      await downloadFile(row.fileId)
+      ElMessage.success('下载成功')
+    } catch (error) {
+      ElMessage.error('下载失败')
+    }
   }
 }
 

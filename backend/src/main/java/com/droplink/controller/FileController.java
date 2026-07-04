@@ -1,6 +1,7 @@
 package com.droplink.controller;
 
 import com.droplink.dto.ApiResponse;
+import com.droplink.dto.PasswordRequest;
 import com.droplink.entity.FileRecord;
 import com.droplink.service.FileService;
 import org.springframework.core.io.FileSystemResource;
@@ -48,20 +49,26 @@ public class FileController {
         return ApiResponse.success("删除成功");
     }
 
-    @GetMapping("/{fileId}/verify")
+    @PostMapping("/{fileId}/verify")
     public ApiResponse<Void> verifyPassword(
             @PathVariable String fileId,
-            @RequestParam("password") String password) {
-        if (fileService.verifyPassword(fileId, password)) {
+            @RequestBody PasswordRequest request) {
+        if (fileService.verifyPassword(fileId, request.getPassword())) {
             return ApiResponse.success("密码正确");
         }
         return ApiResponse.error(403, "密码错误");
     }
 
-    @GetMapping("/{fileId}/download")
+    @GetMapping("/{fileId}/requires-password")
+    public ApiResponse<Boolean> requiresPassword(@PathVariable String fileId) {
+        return ApiResponse.success(fileService.isPasswordRequired(fileId));
+    }
+
+    @PostMapping("/{fileId}/download")
     public ResponseEntity<Resource> downloadFile(
             @PathVariable String fileId,
-            @RequestParam(value = "password", required = false) String password) {
+            @RequestBody(required = false) PasswordRequest request) {
+        String password = (request != null) ? request.getPassword() : null;
         if (!fileService.verifyPassword(fileId, password)) {
             return ResponseEntity.status(403).build();
         }

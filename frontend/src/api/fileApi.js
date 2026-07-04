@@ -28,12 +28,42 @@ export function uploadFile(file, expireHours, password, onProgress) {
 }
 
 export function verifyPassword(fileId, password) {
-  return api.get(`/${fileId}/verify`, { params: { password } })
+  return api.post(`/${fileId}/verify`, { password })
 }
 
-export function downloadFile(fileId, password) {
-  const params = password ? `?password=${encodeURIComponent(password)}` : ''
-  window.open(`/api/files/${fileId}/download${params}`, '_blank')
+export function checkRequiresPassword(fileId) {
+  return api.get(`/${fileId}/requires-password`)
+}
+
+export async function downloadFile(fileId, password) {
+  try {
+    const response = await api.post(`/${fileId}/download`, { password }, {
+      responseType: 'blob'
+    })
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition']
+    let filename = 'download'
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename\*=(?:UTF-8'')(.+)/i)
+      if (filenameMatch) {
+        filename = decodeURIComponent(filenameMatch[1])
+      }
+    }
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Download failed:', error)
+    throw error
+  }
 }
 
 export function deleteFile(fileId) {

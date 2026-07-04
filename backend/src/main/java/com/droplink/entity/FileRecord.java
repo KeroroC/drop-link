@@ -71,8 +71,6 @@ public class FileRecord {
     public Long getDownloadCount() { return downloadCount; }
     public void setDownloadCount(Long downloadCount) { this.downloadCount = downloadCount; }
 
-    public void incrementDownloadCount() { this.downloadCount++; }
-
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }

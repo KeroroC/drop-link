@@ -6,6 +6,8 @@ import com.droplink.repository.FileRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -20,11 +22,13 @@ class FileServiceTest {
     @TempDir
     Path tempDir;
 
+    private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
     @Test
     void upload_shouldSaveFileAndReturnRecord() throws IOException {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         MultipartFile file = new MockMultipartFile(
                 "file", "test.txt", "text/plain", "Hello World".getBytes()
@@ -44,8 +48,8 @@ class FileServiceTest {
     @Test
     void listAll_shouldReturnRecordsInDescendingOrder() throws IOException {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         MultipartFile file1 = new MockMultipartFile("file", "a.txt", "text/plain", "A".getBytes());
         MultipartFile file2 = new MockMultipartFile("file", "b.txt", "text/plain", "B".getBytes());
@@ -65,8 +69,8 @@ class FileServiceTest {
     @Test
     void upload_shouldWriteFileToDisk() throws IOException {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         MultipartFile file = new MockMultipartFile(
                 "file", "disk-test.txt", "text/plain", "Disk Content".getBytes()
@@ -84,8 +88,8 @@ class FileServiceTest {
     @Test
     void getFileInfo_shouldReturnRecordForExistingFileId() throws IOException {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         MultipartFile file = new MockMultipartFile(
                 "file", "info-test.txt", "text/plain", "Info Content".getBytes()
@@ -106,8 +110,8 @@ class FileServiceTest {
     @Test
     void getFileInfo_shouldThrowForNonexistentFileId() {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         // Act & Assert
         assertThrows(FileNotFoundException.class,
@@ -117,8 +121,8 @@ class FileServiceTest {
     @Test
     void getStoredFile_shouldReturnPathThatExistsOnDisk() throws IOException {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         MultipartFile file = new MockMultipartFile(
                 "file", "stored-test.txt", "text/plain", "Stored Content".getBytes()
@@ -131,13 +135,15 @@ class FileServiceTest {
         // Assert
         assertTrue(Files.exists(result), "Returned path should exist on disk");
         assertEquals(tempDir.resolve(uploaded.getStoredName()), result);
+        // Verify download count was incremented
+        assertEquals(1L, repo.findByFileId(uploaded.getFileId()).get().getDownloadCount());
     }
 
     @Test
     void getStoredFile_shouldThrowWhenPhysicalFileMissing() throws IOException {
         // Arrange
-        FileRepository repo = new InMemoryFileRepository();
-        FileService service = new FileService(repo, tempDir.toString());
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
 
         MultipartFile file = new MockMultipartFile(
                 "file", "missing-test.txt", "text/plain", "Will be deleted".getBytes()
@@ -152,5 +158,114 @@ class FileServiceTest {
         // Act & Assert
         assertThrows(FileNotFoundException.class,
                 () -> service.getStoredFile(uploaded.getFileId()));
+    }
+
+    @Test
+    void upload_shouldHashPasswordWithBCrypt() throws IOException {
+        // Arrange
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
+
+        MultipartFile file = new MockMultipartFile(
+                "file", "protected.txt", "text/plain", "Protected content".getBytes()
+        );
+
+        // Act
+        FileRecord record = service.upload(file, 24, "testPassword123");
+
+        // Assert
+        assertNotNull(record.getPasswordHash());
+        assertTrue(record.getPasswordHash().startsWith("$2a$"), "Password should be BCrypt hashed");
+        assertNotEquals("testPassword123", record.getPasswordHash(), "Password should not be stored in plain text");
+    }
+
+    @Test
+    void verifyPassword_shouldReturnTrueForCorrectPassword() throws IOException {
+        // Arrange
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
+
+        MultipartFile file = new MockMultipartFile(
+                "file", "protected.txt", "text/plain", "Protected content".getBytes()
+        );
+        FileRecord uploaded = service.upload(file, 24, "correctPassword");
+
+        // Act
+        boolean result = service.verifyPassword(uploaded.getFileId(), "correctPassword");
+
+        // Assert
+        assertTrue(result, "Verification should succeed with correct password");
+    }
+
+    @Test
+    void verifyPassword_shouldReturnFalseForWrongPassword() throws IOException {
+        // Arrange
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
+
+        MultipartFile file = new MockMultipartFile(
+                "file", "protected.txt", "text/plain", "Protected content".getBytes()
+        );
+        FileRecord uploaded = service.upload(file, 24, "correctPassword");
+
+        // Act
+        boolean result = service.verifyPassword(uploaded.getFileId(), "wrongPassword");
+
+        // Assert
+        assertFalse(result, "Verification should fail with wrong password");
+    }
+
+    @Test
+    void verifyPassword_shouldReturnTrueForUnprotectedFile() throws IOException {
+        // Arrange
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
+
+        MultipartFile file = new MockMultipartFile(
+                "file", "unprotected.txt", "text/plain", "Public content".getBytes()
+        );
+        FileRecord uploaded = service.upload(file, 24, null);
+
+        // Act
+        boolean result = service.verifyPassword(uploaded.getFileId(), "anyPassword");
+
+        // Assert
+        assertTrue(result, "Verification should succeed for unprotected file regardless of password");
+    }
+
+    @Test
+    void isPasswordRequired_shouldReturnTrueForProtectedFile() throws IOException {
+        // Arrange
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
+
+        MultipartFile file = new MockMultipartFile(
+                "file", "protected.txt", "text/plain", "Protected content".getBytes()
+        );
+        FileRecord uploaded = service.upload(file, 24, "password123");
+
+        // Act
+        boolean result = service.isPasswordRequired(uploaded.getFileId());
+
+        // Assert
+        assertTrue(result, "Should return true for protected file");
+    }
+
+    @Test
+    void isPasswordRequired_shouldReturnFalseForUnprotectedFile() throws IOException {
+        // Arrange
+        InMemoryFileRepository repo = new InMemoryFileRepository();
+        FileService service = new FileService(repo, tempDir.toString(), passwordEncoder);
+
+        MultipartFile file = new MockMultipartFile(
+                "file", "unprotected.txt", "text/plain", "Public content".getBytes()
+        );
+        FileRecord uploaded = service.upload(file, 24, null);
+
+        // Act
+        boolean result = service.isPasswordRequired(uploaded.getFileId());
+
+        // Assert
+        assertFalse(result, "Should return false for unprotected file");
     }
 }

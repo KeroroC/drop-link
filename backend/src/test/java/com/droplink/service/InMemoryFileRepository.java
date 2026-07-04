@@ -41,6 +41,17 @@ public class InMemoryFileRepository implements FileRepository {
     }
 
     @Override
+    public int incrementDownloadCount(String fileId) {
+        Optional<FileRecord> record = findByFileId(fileId);
+        if (record.isPresent()) {
+            FileRecord fileRecord = record.get();
+            fileRecord.setDownloadCount(fileRecord.getDownloadCount() + 1);
+            return 1;
+        }
+        return 0;
+    }
+
+    @Override
     public <S extends FileRecord> S save(S entity) {
         if (entity.getId() == null) {
             entity.setId(idCounter.getAndIncrement());
