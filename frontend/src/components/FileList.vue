@@ -7,6 +7,11 @@
           {{ formatSize(row.fileSize) }}
         </template>
       </el-table-column>
+      <el-table-column label="下载次数" width="100" align="center">
+        <template #default="{ row }">
+          {{ row.downloadCount || 0 }}
+        </template>
+      </el-table-column>
       <el-table-column label="上传时间" width="180" align="center">
         <template #default="{ row }">
           {{ formatTime(row.uploadTime) }}

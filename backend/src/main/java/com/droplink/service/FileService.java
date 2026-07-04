@@ -113,6 +113,8 @@ public class FileService {
         if (!Files.exists(filePath)) {
             throw new FileNotFoundException("物理文件不存在: " + fileId);
         }
+        record.incrementDownloadCount();
+        fileRepository.save(record);
         return filePath;
     }
 

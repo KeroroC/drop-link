@@ -29,6 +29,9 @@ public class FileRecord {
     @Column(name = "expire_time")
     private LocalDateTime expireTime;
 
+    @Column(name = "download_count", nullable = false)
+    private Long downloadCount = 0L;
+
     public FileRecord() {}
 
     public FileRecord(String fileId, String originalName, String storedName, Long fileSize, LocalDateTime uploadTime, LocalDateTime expireTime) {
@@ -38,6 +41,7 @@ public class FileRecord {
         this.fileSize = fileSize;
         this.uploadTime = uploadTime;
         this.expireTime = expireTime;
+        this.downloadCount = 0L;
     }
 
     public Long getId() { return id; }
@@ -60,4 +64,9 @@ public class FileRecord {
 
     public LocalDateTime getExpireTime() { return expireTime; }
     public void setExpireTime(LocalDateTime expireTime) { this.expireTime = expireTime; }
+
+    public Long getDownloadCount() { return downloadCount; }
+    public void setDownloadCount(Long downloadCount) { this.downloadCount = downloadCount; }
+
+    public void incrementDownloadCount() { this.downloadCount++; }
 }
