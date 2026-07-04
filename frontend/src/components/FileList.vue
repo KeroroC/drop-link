@@ -9,7 +9,7 @@
       </el-table-column>
       <el-table-column label="保护" width="80" align="center">
         <template #default="{ row }">
-          <el-icon v-if="row.passwordHash" color="#E6A23C"><lock /></el-icon>
+          <el-icon v-if="row.passwordProtected" color="#E6A23C"><lock /></el-icon>
           <span v-else>-</span>
         </template>
       </el-table-column>
@@ -76,7 +76,7 @@ function formatTime(timeStr) {
 }
 
 async function handleDownload(row) {
-  if (row.passwordHash) {
+  if (row.passwordProtected) {
     try {
       const { value: password } = await ElMessageBox.prompt(
         '此文件需要密码才能下载',
@@ -91,12 +91,13 @@ async function handleDownload(row) {
       await downloadFile(row.fileId, password)
       ElMessage.success('下载成功')
     } catch (error) {
-      if (error !== 'cancel' && error?.message !== 'cancel') {
-        if (error.response?.status === 403) {
-          ElMessage.error('密码错误')
-        } else {
-          ElMessage.error('下载失败')
-        }
+      if (error === 'cancel' || error?.message === 'cancel') {
+        return
+      }
+      if (error.response?.status === 403) {
+        ElMessage.error(error.response.data?.message || '密码错误')
+      } else {
+        ElMessage.error('下载失败')
       }
     }
   } else {

@@ -61,7 +61,16 @@ export async function downloadFile(fileId, password) {
     link.remove()
     window.URL.revokeObjectURL(url)
   } catch (error) {
-    console.error('Download failed:', error)
+    // 处理 blob 类型的错误响应（如 403 密码错误）
+    if (error.response?.data instanceof Blob && error.response.data.type === 'application/json') {
+      try {
+        const errorData = await error.response.data.text()
+        const parsed = JSON.parse(errorData)
+        error.response.data = parsed
+      } catch {
+        // 解析失败，保持原样
+      }
+    }
     throw error
   }
 }

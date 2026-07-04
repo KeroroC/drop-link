@@ -1,5 +1,6 @@
 package com.droplink.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -17,6 +18,7 @@ public class FileRecord {
     @Column(name = "original_name", nullable = false)
     private String originalName;
 
+    @JsonIgnore
     @Column(name = "stored_name", nullable = false)
     private String storedName;
 
@@ -32,8 +34,17 @@ public class FileRecord {
     @Column(name = "download_count", nullable = false)
     private Long downloadCount = 0L;
 
+    @JsonIgnore
     @Column(name = "password_hash")
     private String passwordHash;
+
+    /**
+     * 是否需要密码保护（用于前端展示，不存储到数据库）
+     */
+    @Transient
+    public boolean isPasswordProtected() {
+        return passwordHash != null && !passwordHash.isEmpty();
+    }
 
     public FileRecord() {}
 
