@@ -36,6 +36,9 @@ public class FileService {
     public FileRecord upload(MultipartFile file) throws IOException {
         String fileId = UUID.randomUUID().toString();
         String originalName = file.getOriginalFilename();
+        if (originalName == null || originalName.isBlank()) {
+            originalName = "unnamed";
+        }
         String storedName = fileId + getFileExtension(originalName);
         Long fileSize = file.getSize();
 

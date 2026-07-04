@@ -34,9 +34,9 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ApiResponse<Void> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        fileService.upload(file);
-        return ApiResponse.success("上传成功");
+    public ApiResponse<FileRecord> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
+        FileRecord record = fileService.upload(file);
+        return ApiResponse.success(record);
     }
 
     @GetMapping("/{fileId}/download")
