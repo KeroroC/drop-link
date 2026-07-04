@@ -3,6 +3,9 @@ uploads/
 data/
 *.db
 
+# Build output
+backend/src/main/resources/static/
+
 # IDE
 .idea/
 *.iml
