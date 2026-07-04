@@ -32,6 +32,9 @@ public class FileRecord {
     @Column(name = "download_count", nullable = false)
     private Long downloadCount = 0L;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     public FileRecord() {}
 
     public FileRecord(String fileId, String originalName, String storedName, Long fileSize, LocalDateTime uploadTime, LocalDateTime expireTime) {
@@ -69,4 +72,7 @@ public class FileRecord {
     public void setDownloadCount(Long downloadCount) { this.downloadCount = downloadCount; }
 
     public void incrementDownloadCount() { this.downloadCount++; }
+
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 }

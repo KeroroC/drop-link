@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +41,7 @@ public class FileService {
         Files.createDirectories(uploadDir);
     }
 
-    public FileRecord upload(MultipartFile file, Integer expireHours) throws IOException {
+    public FileRecord upload(MultipartFile file, Integer expireHours, String password) throws IOException {
         String fileId = UUID.randomUUID().toString();
         String originalName = file.getOriginalFilename();
         if (originalName == null || originalName.isBlank()) {
@@ -64,7 +67,37 @@ public class FileService {
         file.transferTo(targetPath.toFile());
 
         FileRecord record = new FileRecord(fileId, originalName, storedName, fileSize, now, expireTime);
+        if (password != null && !password.isBlank()) {
+            record.setPasswordHash(hashPassword(password));
+        }
         return fileRepository.save(record);
+    }
+
+    public boolean verifyPassword(String fileId, String password) {
+        FileRecord record = getFileInfo(fileId);
+        if (record.getPasswordHash() == null) {
+            return true; // No password set
+        }
+        if (password == null || password.isBlank()) {
+            return false;
+        }
+        return record.getPasswordHash().equals(hashPassword(password));
+    }
+
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256不可用", e);
+        }
     }
 
     public void deleteFile(String fileId) {

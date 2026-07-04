@@ -7,6 +7,12 @@
           {{ formatSize(row.fileSize) }}
         </template>
       </el-table-column>
+      <el-table-column label="保护" width="80" align="center">
+        <template #default="{ row }">
+          <el-icon v-if="row.passwordHash" color="#E6A23C"><lock /></el-icon>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="下载次数" width="100" align="center">
         <template #default="{ row }">
           {{ row.downloadCount || 0 }}
@@ -19,7 +25,7 @@
       </el-table-column>
       <el-table-column label="操作" width="160" align="center">
         <template #default="{ row }">
-          <el-button type="primary" link @click="handleDownload(row.fileId)">
+          <el-button type="primary" link @click="handleDownload(row)">
             下载
           </el-button>
           <el-button type="danger" link @click="handleDelete(row)">
@@ -36,8 +42,9 @@
 </template>
 
 <script setup>
-import { downloadFile, deleteFile } from '../api/fileApi'
+import { downloadFile, deleteFile, verifyPassword } from '../api/fileApi'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Lock } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['delete-success'])
 
@@ -68,8 +75,31 @@ function formatTime(timeStr) {
   })
 }
 
-function handleDownload(fileId) {
-  downloadFile(fileId)
+async function handleDownload(row) {
+  if (row.passwordHash) {
+    try {
+      const { value: password } = await ElMessageBox.prompt(
+        '此文件需要密码才能下载',
+        '输入密码',
+        {
+          inputType: 'password',
+          inputPlaceholder: '请输入密码',
+          confirmButtonText: '下载',
+          cancelButtonText: '取消'
+        }
+      )
+      const { data } = await verifyPassword(row.fileId, password)
+      if (data.code === 200) {
+        downloadFile(row.fileId, password)
+      } else {
+        ElMessage.error('密码错误')
+      }
+    } catch {
+      // User cancelled
+    }
+  } else {
+    downloadFile(row.fileId)
+  }
 }
 
 async function handleDelete(row) {

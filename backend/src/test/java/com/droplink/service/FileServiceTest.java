@@ -31,7 +31,7 @@ class FileServiceTest {
         );
 
         // Act
-        FileRecord record = service.upload(file, 24);
+        FileRecord record = service.upload(file, 24, null);
 
         // Assert
         assertNotNull(record.getFileId());
@@ -50,8 +50,8 @@ class FileServiceTest {
         MultipartFile file1 = new MockMultipartFile("file", "a.txt", "text/plain", "A".getBytes());
         MultipartFile file2 = new MockMultipartFile("file", "b.txt", "text/plain", "B".getBytes());
 
-        service.upload(file1, 24);
-        service.upload(file2, 24);
+        service.upload(file1, 24, null);
+        service.upload(file2, 24, null);
 
         // Act
         List<FileRecord> records = service.listAll();
@@ -73,7 +73,7 @@ class FileServiceTest {
         );
 
         // Act
-        FileRecord record = service.upload(file, 24);
+        FileRecord record = service.upload(file, 24, null);
 
         // Assert
         Path storedPath = tempDir.resolve(record.getStoredName());
@@ -90,7 +90,7 @@ class FileServiceTest {
         MultipartFile file = new MockMultipartFile(
                 "file", "info-test.txt", "text/plain", "Info Content".getBytes()
         );
-        FileRecord uploaded = service.upload(file, 24);
+        FileRecord uploaded = service.upload(file, 24, null);
 
         // Act
         FileRecord result = service.getFileInfo(uploaded.getFileId());
@@ -123,7 +123,7 @@ class FileServiceTest {
         MultipartFile file = new MockMultipartFile(
                 "file", "stored-test.txt", "text/plain", "Stored Content".getBytes()
         );
-        FileRecord uploaded = service.upload(file, 24);
+        FileRecord uploaded = service.upload(file, 24, null);
 
         // Act
         Path result = service.getStoredFile(uploaded.getFileId());
@@ -142,7 +142,7 @@ class FileServiceTest {
         MultipartFile file = new MockMultipartFile(
                 "file", "missing-test.txt", "text/plain", "Will be deleted".getBytes()
         );
-        FileRecord uploaded = service.upload(file, 24);
+        FileRecord uploaded = service.upload(file, 24, null);
 
         // Delete the physical file from disk
         Path storedPath = tempDir.resolve(uploaded.getStoredName());

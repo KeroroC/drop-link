@@ -28,6 +28,17 @@
       </el-radio-group>
     </div>
 
+    <div class="password-input">
+      <span class="expire-label">密码保护：</span>
+      <el-input
+        v-model="password"
+        type="password"
+        placeholder="留空则不设密码"
+        show-password
+        style="width: 200px"
+      />
+    </div>
+
     <div v-if="uploading" class="upload-progress">
       <el-progress
         :percentage="progress"
@@ -51,6 +62,7 @@ const uploadRef = ref(null)
 const uploading = ref(false)
 const progress = ref(0)
 const expireHours = ref(24)
+const password = ref('')
 
 async function handleFileChange(file) {
   if (!file || !file.raw) return
@@ -59,7 +71,7 @@ async function handleFileChange(file) {
   progress.value = 0
 
   try {
-    await uploadFile(file.raw, expireHours.value || null, (event) => {
+    await uploadFile(file.raw, expireHours.value || null, password.value || null, (event) => {
       if (event.total) {
         progress.value = Math.round((event.loaded / event.total) * 100)
       }
@@ -87,6 +99,12 @@ async function handleFileChange(file) {
 
 .expire-selector {
   margin-top: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.password-input {
+  margin-top: 12px;
   display: flex;
   align-items: center;
 }

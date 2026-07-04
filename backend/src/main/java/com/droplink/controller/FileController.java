@@ -36,8 +36,9 @@ public class FileController {
     @PostMapping("/upload")
     public ApiResponse<FileRecord> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "expireHours", required = false) Integer expireHours) throws IOException {
-        FileRecord record = fileService.upload(file, expireHours);
+            @RequestParam(value = "expireHours", required = false) Integer expireHours,
+            @RequestParam(value = "password", required = false) String password) throws IOException {
+        FileRecord record = fileService.upload(file, expireHours, password);
         return ApiResponse.success(record);
     }
 
@@ -47,8 +48,23 @@ public class FileController {
         return ApiResponse.success("删除成功");
     }
 
+    @GetMapping("/{fileId}/verify")
+    public ApiResponse<Void> verifyPassword(
+            @PathVariable String fileId,
+            @RequestParam("password") String password) {
+        if (fileService.verifyPassword(fileId, password)) {
+            return ApiResponse.success("密码正确");
+        }
+        return ApiResponse.error(403, "密码错误");
+    }
+
     @GetMapping("/{fileId}/download")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String fileId) {
+    public ResponseEntity<Resource> downloadFile(
+            @PathVariable String fileId,
+            @RequestParam(value = "password", required = false) String password) {
+        if (!fileService.verifyPassword(fileId, password)) {
+            return ResponseEntity.status(403).build();
+        }
         FileRecord record = fileService.getFileInfo(fileId);
         Path filePath = fileService.getStoredFile(fileId);
 
