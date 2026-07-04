@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:sqlite:data/file_share.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+app:
+  upload:
+    dir: ./uploads
