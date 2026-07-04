@@ -1,7 +1,6 @@
 package com.droplink.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -9,16 +8,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-        // Ensure API paths are not caught by static resource handlers
-        configurer.setUseTrailingSlashMatch(false);
-    }
-
-    @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Only serve static resources for non-API paths
-        // API paths (/api/**) will be handled by controllers
-        registry.addResourceHandler("/assets/**", "/favicon.ico", "/index.html")
-                .addResourceLocations("classpath:/static/", "classpath:/static/assets/");
+        // Disable default static resource handling for root path
+        // Only serve specific static resource paths
+        registry.addResourceHandler("/assets/**")
+                .addResourceLocations("classpath:/static/assets/");
+        registry.addResourceHandler("/index.html")
+                .addResourceLocations("classpath:/static/index.html");
+        registry.addResourceHandler("/favicon.ico")
+                .addResourceLocations("classpath:/static/favicon.ico");
     }
 }
