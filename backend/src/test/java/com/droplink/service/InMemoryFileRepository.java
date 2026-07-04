@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.FluentQuery;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -30,6 +31,13 @@ public class InMemoryFileRepository implements FileRepository {
         return store.values().stream()
                 .filter(r -> r.getFileId().equals(fileId))
                 .findFirst();
+    }
+
+    @Override
+    public List<FileRecord> findByExpireTimeBeforeAndExpireTimeIsNotNull(LocalDateTime time) {
+        return store.values().stream()
+                .filter(r -> r.getExpireTime() != null && r.getExpireTime().isBefore(time))
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -38,7 +38,7 @@ public class FileService {
         Files.createDirectories(uploadDir);
     }
 
-    public FileRecord upload(MultipartFile file) throws IOException {
+    public FileRecord upload(MultipartFile file, Integer expireHours) throws IOException {
         String fileId = UUID.randomUUID().toString();
         String originalName = file.getOriginalFilename();
         if (originalName == null || originalName.isBlank()) {
@@ -52,6 +52,10 @@ public class FileService {
 
         String storedName = fileId + ext;
         Long fileSize = file.getSize();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expireTime = (expireHours != null && expireHours > 0)
+                ? now.plusHours(expireHours)
+                : null;
 
         Path targetPath = uploadDir.resolve(storedName).normalize();
         if (!targetPath.startsWith(uploadDir)) {
@@ -59,8 +63,23 @@ public class FileService {
         }
         file.transferTo(targetPath.toFile());
 
-        FileRecord record = new FileRecord(fileId, originalName, storedName, fileSize, LocalDateTime.now());
+        FileRecord record = new FileRecord(fileId, originalName, storedName, fileSize, now, expireTime);
         return fileRepository.save(record);
+    }
+
+    public void cleanExpiredFiles() {
+        List<FileRecord> expiredFiles = fileRepository.findByExpireTimeBeforeAndExpireTimeIsNotNull(LocalDateTime.now());
+        for (FileRecord record : expiredFiles) {
+            try {
+                Path filePath = uploadDir.resolve(record.getStoredName()).normalize();
+                if (filePath.startsWith(uploadDir) && Files.exists(filePath)) {
+                    Files.delete(filePath);
+                }
+            } catch (IOException e) {
+                // Log error but continue cleaning other files
+            }
+            fileRepository.delete(record);
+        }
     }
 
     public List<FileRecord> listAll() {

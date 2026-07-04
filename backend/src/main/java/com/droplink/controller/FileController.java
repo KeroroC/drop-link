@@ -34,8 +34,10 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ApiResponse<FileRecord> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        FileRecord record = fileService.upload(file);
+    public ApiResponse<FileRecord> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "expireHours", required = false) Integer expireHours) throws IOException {
+        FileRecord record = fileService.upload(file, expireHours);
         return ApiResponse.success(record);
     }
 

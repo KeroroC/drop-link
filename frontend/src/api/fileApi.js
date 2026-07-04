@@ -9,9 +9,12 @@ export function fetchFileList() {
   return api.get('/')
 }
 
-export function uploadFile(file, onProgress) {
+export function uploadFile(file, expireHours, onProgress) {
   const formData = new FormData()
   formData.append('file', file)
+  if (expireHours !== null && expireHours !== undefined) {
+    formData.append('expireHours', expireHours)
+  }
 
   return api.post('/upload', formData, {
     headers: {

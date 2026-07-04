@@ -18,6 +18,16 @@
       </template>
     </el-upload>
 
+    <div class="expire-selector">
+      <span class="expire-label">过期时间：</span>
+      <el-radio-group v-model="expireHours">
+        <el-radio :value="24">1天</el-radio>
+        <el-radio :value="168">7天</el-radio>
+        <el-radio :value="720">30天</el-radio>
+        <el-radio :value="0">永不过期</el-radio>
+      </el-radio-group>
+    </div>
+
     <div v-if="uploading" class="upload-progress">
       <el-progress
         :percentage="progress"
@@ -40,6 +50,7 @@ const emit = defineEmits(['upload-success'])
 const uploadRef = ref(null)
 const uploading = ref(false)
 const progress = ref(0)
+const expireHours = ref(24)
 
 async function handleFileChange(file) {
   if (!file || !file.raw) return
@@ -48,7 +59,7 @@ async function handleFileChange(file) {
   progress.value = 0
 
   try {
-    await uploadFile(file.raw, (event) => {
+    await uploadFile(file.raw, expireHours.value || null, (event) => {
       if (event.total) {
         progress.value = Math.round((event.loaded / event.total) * 100)
       }
@@ -72,6 +83,18 @@ async function handleFileChange(file) {
 <style scoped>
 .file-uploader {
   margin-bottom: 20px;
+}
+
+.expire-selector {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.expire-label {
+  font-size: 14px;
+  color: #606266;
+  margin-right: 8px;
 }
 
 .upload-progress {

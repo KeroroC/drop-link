@@ -26,14 +26,18 @@ public class FileRecord {
     @Column(name = "upload_time", nullable = false)
     private LocalDateTime uploadTime;
 
+    @Column(name = "expire_time")
+    private LocalDateTime expireTime;
+
     public FileRecord() {}
 
-    public FileRecord(String fileId, String originalName, String storedName, Long fileSize, LocalDateTime uploadTime) {
+    public FileRecord(String fileId, String originalName, String storedName, Long fileSize, LocalDateTime uploadTime, LocalDateTime expireTime) {
         this.fileId = fileId;
         this.originalName = originalName;
         this.storedName = storedName;
         this.fileSize = fileSize;
         this.uploadTime = uploadTime;
+        this.expireTime = expireTime;
     }
 
     public Long getId() { return id; }
@@ -53,4 +57,7 @@ public class FileRecord {
 
     public LocalDateTime getUploadTime() { return uploadTime; }
     public void setUploadTime(LocalDateTime uploadTime) { this.uploadTime = uploadTime; }
+
+    public LocalDateTime getExpireTime() { return expireTime; }
+    public void setExpireTime(LocalDateTime expireTime) { this.expireTime = expireTime; }
 }
